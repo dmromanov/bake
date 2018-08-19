@@ -21,7 +21,6 @@ use Cake\Datasource\ConnectionManager;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Inflector;
-use Cake\Validation\Validation;
 
 /**
  * Task class for generating model files.
@@ -556,9 +555,11 @@ class ModelTask extends BakeTask
 
         $schema = $model->getSchema();
         foreach ($schema->columns() as $column) {
+            $columnInfo = $schema->getColumn($column);
             $properties[$column] = [
                 'kind' => 'column',
-                'type' => $schema->getColumnType($column)
+                'type' => $schema->getColumnType($column),
+                'comment' => $columnInfo['comment'] // FIXME: ugly
             ];
         }
 
@@ -581,7 +582,8 @@ class ModelTask extends BakeTask
             $properties[$association->getProperty()] = [
                 'kind' => 'association',
                 'association' => $association,
-                'type' => $entityClass
+                'type' => $entityClass,
+                'comment' => null
             ];
         }
 

@@ -28,15 +28,15 @@ class BakeArticlesFixture extends TestFixture
      * @var array
      */
     public $fields = [
-        'id' => ['type' => 'integer'],
+        'id' => ['type' => 'integer', 'comment' => 'ID'],
         'bake_user_id' => ['type' => 'integer', 'null' => false],
-        'title' => ['type' => 'string', 'length' => 50, 'null' => false],
+        'title' => ['type' => 'string', 'length' => 50, 'null' => false, 'comment' => 'Title'],
         'body' => 'text',
-        'rating' => ['type' => 'float', 'unsigned' => true, 'default' => 0.0, 'null' => false],
-        'score' => ['type' => 'decimal', 'unsigned' => true, 'default' => 0.0, 'null' => false],
-        'published' => ['type' => 'boolean', 'length' => 1, 'default' => false],
-        'created' => 'datetime',
-        'updated' => 'datetime',
+        'rating' => ['type' => 'float', 'unsigned' => true, 'default' => 0.0, 'null' => false, 'comment' => 'Rating'],
+        'score' => ['type' => 'decimal', 'unsigned' => true, 'default' => 0.0, 'null' => false, 'comment' => 'Score'],
+        'published' => ['type' => 'boolean', 'length' => 1, 'default' => false, 'comment' => 'Is published'],
+        'created' => ['type' => 'datetime', 'comment' => 'Creation date'],
+        'updated' => ['type' => 'datetime', 'comment' => 'Modification date'],
         '_constraints' => ['primary' => ['type' => 'primary', 'columns' => ['id']]]
     ];
 

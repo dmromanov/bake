@@ -616,6 +616,9 @@ class ModelTaskTest extends TestCase
      */
     public function testGetEntityPropertySchema()
     {
+        $driver = ConnectionManager::get('test')->getDriver();
+        $this->skipIf($driver instanceof Sqlite, 'Incompatible with mysql');
+
         $model = TableRegistry::getTableLocator()->get('BakeArticles');
         $model->belongsTo('BakeUsers');
         $model->hasMany('BakeTest.Authors');
@@ -626,49 +629,139 @@ class ModelTaskTest extends TestCase
         $expected = [
             'id' => [
                 'kind' => 'column',
-                'type' => 'integer'
+                'type' => 'integer',
+                'comment' => 'ID',
             ],
             'title' => [
                 'kind' => 'column',
-                'type' => 'string'
+                'type' => 'string',
+                'comment' => 'Title',
             ],
             'body' => [
                 'kind' => 'column',
-                'type' => 'text'
+                'type' => 'text',
+                'comment' => null,
             ],
             'rating' => [
                 'kind' => 'column',
-                'type' => 'float'
+                'type' => 'float',
+                'comment' => 'Rating',
             ],
             'score' => [
                 'kind' => 'column',
-                'type' => 'decimal'
+                'type' => 'decimal',
+                'comment' => 'Score',
             ],
             'created' => [
                 'kind' => 'column',
-                'type' => 'timestamp'
+                'type' => 'timestamp',
+                'comment' => 'Creation date',
             ],
             'bake_user_id' => [
                 'kind' => 'column',
-                'type' => 'integer'
+                'type' => 'integer',
+                'comment' => null,
             ],
             'published' => [
                 'kind' => 'column',
-                'type' => 'boolean'
+                'type' => 'boolean',
+                'comment' => 'Is published',
             ],
             'updated' => [
                 'kind' => 'column',
-                'type' => 'timestamp'
+                'type' => 'timestamp',
+                'comment' => 'Modification date',
             ],
             'bake_user' => [
                 'kind' => 'association',
                 'association' => $model->getAssociation('BakeUsers'),
-                'type' => '\App\Model\Entity\BakeUser'
+                'type' => '\App\Model\Entity\BakeUser',
+                'comment' => null,
             ],
             'authors' => [
                 'kind' => 'association',
                 'association' => $model->getAssociation('Authors'),
-                'type' => '\BakeTest\Model\Entity\Author'
+                'type' => '\BakeTest\Model\Entity\Author',
+                'comment' => null,
+            ]
+        ];
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * Test getting the entity property schema.
+     *
+     * @return void
+     */
+    public function testGetEntityPropertySchemaNoComments()
+    {
+        $driver = ConnectionManager::get('test')->getDriver();
+        $this->skipIf($driver instanceof Mysql, 'Incompatible with mysql');
+
+        $model = TableRegistry::getTableLocator()->get('BakeArticles');
+        $model->belongsTo('BakeUsers');
+        $model->hasMany('BakeTest.Authors');
+        $model->getSchema()->setColumnType('created', 'timestamp');
+        $model->getSchema()->setColumnType('updated', 'timestamp');
+
+        $result = $this->Task->getEntityPropertySchema($model);
+        $expected = [
+            'id' => [
+                'kind' => 'column',
+                'type' => 'integer',
+                'comment' => null,
+            ],
+            'title' => [
+                'kind' => 'column',
+                'type' => 'string',
+                'comment' => null,
+            ],
+            'body' => [
+                'kind' => 'column',
+                'type' => 'text',
+                'comment' => null,
+            ],
+            'rating' => [
+                'kind' => 'column',
+                'type' => 'float',
+                'comment' => null,
+            ],
+            'score' => [
+                'kind' => 'column',
+                'type' => 'decimal',
+                'comment' => null,
+            ],
+            'created' => [
+                'kind' => 'column',
+                'type' => 'timestamp',
+                'comment' => null,
+            ],
+            'bake_user_id' => [
+                'kind' => 'column',
+                'type' => 'integer',
+                'comment' => null,
+            ],
+            'published' => [
+                'kind' => 'column',
+                'type' => 'boolean',
+                'comment' => null,
+            ],
+            'updated' => [
+                'kind' => 'column',
+                'type' => 'timestamp',
+                'comment' => null,
+            ],
+            'bake_user' => [
+                'kind' => 'association',
+                'association' => $model->getAssociation('BakeUsers'),
+                'type' => '\App\Model\Entity\BakeUser',
+                'comment' => null,
+            ],
+            'authors' => [
+                'kind' => 'association',
+                'association' => $model->getAssociation('Authors'),
+                'type' => '\BakeTest\Model\Entity\Author',
+                'comment' => null,
             ]
         ];
         $this->assertEquals($expected, $result);
@@ -1563,6 +1656,9 @@ class ModelTaskTest extends TestCase
      */
     public function testBakeEntityWithPropertyTypeHints()
     {
+        $driver = ConnectionManager::get('test')->getDriver();
+        $this->skipIf($driver instanceof Sqlite, 'Incompatible with sqlite');
+
         $model = TableRegistry::getTableLocator()->get('BakeArticles');
         $model->belongsTo('BakeUsers');
         $model->hasMany('BakeTest.Authors');
@@ -1576,10 +1672,39 @@ class ModelTaskTest extends TestCase
             'type' => 'unknownType'
         ]);
 
-        $config = [
-            'fields' => false,
-            'propertySchema' => $this->Task->getEntityPropertySchema($model)
-        ];
+        $this->generatedFile = APP . 'Model/Entity/BakeArticle.php';
+        $this->exec('bake model --no-test --no-fixture --no-table --no-fields bake_articles');
+
+        $this->assertExitCode(Shell::CODE_SUCCESS);
+        $this->assertFileExists($this->generatedFile);
+        $result = file_get_contents($this->generatedFile);
+        $this->assertSameAsFile(__FUNCTION__ . '.php', $result);
+    }
+
+    /**
+     * test baking an entity with DocBlock property type hints.
+     *
+     * @return void
+     */
+    public function testBakeEntityWithPropertyTypeHintsNoComments()
+    {
+        $driver = ConnectionManager::get('test')->getDriver();
+        $this->skipIf($driver instanceof Mysql, 'Incompatible with mysql');
+        $this->skipIf($driver instanceof Postgres, 'Incompatible with postgres');
+        $this->skipIf($driver instanceof Sqlserver, 'Incompatible with sqlserver');
+
+        $model = TableRegistry::getTableLocator()->get('BakeArticles');
+        $model->belongsTo('BakeUsers');
+        $model->hasMany('BakeTest.Authors');
+        $model->getSchema()->addColumn('array_type', [
+            'type' => 'array'
+        ]);
+        $model->getSchema()->addColumn('json_type', [
+            'type' => 'json'
+        ]);
+        $model->getSchema()->addColumn('unknown_type', [
+            'type' => 'unknownType'
+        ]);
 
         $this->generatedFile = APP . 'Model/Entity/BakeArticle.php';
         $this->exec('bake model --no-test --no-fixture --no-table --no-fields bake_articles');

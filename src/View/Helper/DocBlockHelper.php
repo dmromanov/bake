@@ -98,7 +98,10 @@ class DocBlockHelper extends Helper
         $properties = [];
         foreach ($propertySchema as $property => $info) {
             if ($info['kind'] === 'column') {
-                $properties[$property] = $this->columnTypeToHintType($info['type']);
+                $properties[$property] = [
+                    'type' => $this->columnTypeToHintType($info['type']),
+                    'comment' => $info['comment'],
+                ];
             }
         }
 
@@ -135,11 +138,18 @@ class DocBlockHelper extends Helper
                 if ($info['association']->type() === Association::MANY_TO_ONE) {
                     $properties = $this->_insertAfter(
                         $properties,
-                        $info['association']->getForeignKey(),
-                        [$property => $type]
+                        $info['association']->getForeignKey(), [
+                            $property => [
+                                'type' => $type,
+                                'comment' => null,
+                            ],
+                        ]
                     );
                 } else {
-                    $properties[$property] = $type;
+                    $properties[$property] = [
+                        'type' => $type,
+                        'comment' => null,
+                    ];
                 }
             }
         }
@@ -211,8 +221,8 @@ class DocBlockHelper extends Helper
     public function propertyHints(array $properties)
     {
         $lines = [];
-        foreach ($properties as $property => $type) {
-            $type = $type ? $type . ' ' : '';
+        foreach ($properties as $property => $info) {
+            $type = isset($info['type']) ? $info['type'] . ' ' : '';
             $lines[] = "@property {$type}\${$property}";
         }
 
